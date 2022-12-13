@@ -17,42 +17,42 @@ from sendsms.message import SmsMessage
 class PhoneNumberUserManager(BaseUserManager):
     use_in_migrations = True
 
-    def _create_user(self, username, phone_number, email,
-                     password, **extra_fields):
+    def _create_user(self, username, phone_number, email, password, **extra_fields):
         """
         Creates and saves a User with the given username, email and password.
         """
         if not username:
-            raise ValueError('The given username must be set')
+            raise ValueError("The given username must be set")
         email = self.normalize_email(email)
         username = self.model.normalize_username(username)
         user = self.model(
-            username=username, email=email, phone_number=phone_number,
-            **extra_fields
+            username=username, email=email, phone_number=phone_number, **extra_fields
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_user(self, username, phone_number,
-                    email=None, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', False)
-        extra_fields.setdefault('is_superuser', False)
-        return self._create_user(username, phone_number, email, password,
-                                 **extra_fields)
+    def create_user(
+        self, username, phone_number, email=None, password=None, **extra_fields
+    ):
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        return self._create_user(
+            username, phone_number, email, password, **extra_fields
+        )
 
-    def create_superuser(self, username, phone_number, email, password,
-                         **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
+    def create_superuser(self, username, phone_number, email, password, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
 
-        return self._create_user(username, phone_number, email, password,
-                                 **extra_fields)
+        return self._create_user(
+            username, phone_number, email, password, **extra_fields
+        )
 
 
 class PhoneNumberAbstactUser(AbstractUser):
@@ -60,8 +60,8 @@ class PhoneNumberAbstactUser(AbstractUser):
     objects = PhoneNumberUserManager()
 
     class Meta:
-        verbose_name = _('user')
-        verbose_name_plural = _('users')
+        verbose_name = _("user")
+        verbose_name_plural = _("users")
         abstract = True
 
 
@@ -85,20 +85,22 @@ class PhoneToken(models.Model):
         # Any more than 10 attempts returns False for the day.
         today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
         today_max = datetime.datetime.combine(datetime.date.today(), datetime.time.max)
-        otps = cls.objects.filter(phone_number=number, timestamp__range=(today_min, today_max))
-        if otps.count() <= getattr(settings, 'PHONE_LOGIN_ATTEMPTS', 10):
-            otp = cls.generate_otp(length=getattr(settings, 'PHONE_LOGIN_OTP_LENGTH', 6))
+        otps = cls.objects.filter(
+            phone_number=number, timestamp__range=(today_min, today_max)
+        )
+        if otps.count() <= getattr(settings, "PHONE_LOGIN_ATTEMPTS", 10):
+            otp = cls.generate_otp(
+                length=getattr(settings, "PHONE_LOGIN_OTP_LENGTH", 6)
+            )
             phone_token = PhoneToken(phone_number=number, otp=otp)
             phone_token.save()
-            from_phone = getattr(settings, 'SENDSMS_FROM_NUMBER')
+            from_phone = getattr(settings, "SENDSMS_FROM_NUMBER")
             message = SmsMessage(
                 body=render_to_string(
-                    "otp_sms.txt",
-                    {"otp": otp, "id": phone_token.id}
+                    "otp_sms.txt", {"otp": otp, "id": phone_token.id}
                 ),
                 from_phone=from_phone,
-                to=[number]
-
+                to=[number],
             )
             message.send()
             return phone_token
@@ -107,9 +109,9 @@ class PhoneToken(models.Model):
 
     @classmethod
     def generate_otp(cls, length=6):
-        hash_algorithm = getattr(settings, 'PHONE_LOGIN_OTP_HASH_ALGORITHM', 'sha256')
+        hash_algorithm = getattr(settings, "PHONE_LOGIN_OTP_HASH_ALGORITHM", "sha256")
         m = getattr(hashlib, hash_algorithm)()
-        m.update(getattr(settings, 'SECRET_KEY', None).encode('utf-8'))
+        m.update(getattr(settings, "SECRET_KEY", None).encode("utf-8"))
         m.update(os.urandom(16))
         otp = str(int(m.hexdigest(), 16))[-length:]
         return otp

@@ -41,7 +41,7 @@ def user_detail(user, last_login):
         "id": user.pk,
         "last_login": last_login,
         "token": token,
-        "status": status.HTTP_200_OK
+        "status": status.HTTP_200_OK,
     }
     return user_json
 
